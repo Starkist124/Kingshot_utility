@@ -41,7 +41,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 def load_data():
     try:
         # Read the sheet. ttl=0 means it always fetches the newest live data!
-        df = conn.read(worksheet="Sheet1", ttl=0)
+        df = conn.read(ttl=0)
         return df.dropna(how="all") # Clean up empty rows
     except Exception as e:
         st.error(f"Could not connect to Google Sheets: {e}")
