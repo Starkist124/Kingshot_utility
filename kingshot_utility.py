@@ -186,17 +186,33 @@ with tab2:
                 hovertext=hover_text
             ))
 
-        # Format the Map Canvas to look like our old green board
-        # Format the Map Canvas to be a perfect square and remove extra whitespace
+        # Format the Map Canvas to be a perfect square and fix the drag/zoom issues
         fig.update_layout(
             plot_bgcolor="#C4E0B4",
-            paper_bgcolor="#f0f0f0",
-            xaxis=dict(range=[0, 1199], showgrid=True, gridcolor="#A3C993", dtick=100, side="bottom", constrain="domain"),
-            yaxis=dict(range=[0, 1199], showgrid=True, gridcolor="#A3C993", dtick=100, scaleanchor="x", scaleratio=1, constrain="domain"),
-            width=750,  # Lock the exact width
-            height=750, # Lock the exact height to make it a perfect square
-            margin=dict(l=20, r=20, t=40, b=20), # Shave off the ugly excess borders
-            title="Live Tactical Map (Drag to pan, Scroll to zoom)",
+            paper_bgcolor="#1E1E1E", # Changed to a dark gray to match your theme!
+            dragmode="pan",          # <--- This fixes the "drag to pan" issue!
+            xaxis=dict(
+                range=[0, 1200], 
+                autorange=False,     # <--- Stops it from auto-squishing to your markers
+                showgrid=True, 
+                gridcolor="#A3C993", 
+                dtick=100, 
+                side="bottom",
+                fixedrange=False
+            ),
+            yaxis=dict(
+                range=[0, 1200], 
+                autorange=False,     # <--- Stops it from auto-squishing
+                showgrid=True, 
+                gridcolor="#A3C993", 
+                dtick=100,
+                fixedrange=False
+                # Removed the buggy scaleanchor properties that crashed your map!
+            ),
+            width=750,  
+            height=750, 
+            margin=dict(l=20, r=20, t=40, b=20),
+            title=dict(text="Live Tactical Map (Drag to pan, Scroll to zoom)", font=dict(color="#E0E0E0")),
             showlegend=False
         )
 
