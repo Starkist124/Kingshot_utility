@@ -187,15 +187,22 @@ with tab2:
             ))
 
         # Format the Map Canvas to look like our old green board
+        # Format the Map Canvas to be a perfect square and remove extra whitespace
         fig.update_layout(
             plot_bgcolor="#C4E0B4",
             paper_bgcolor="#f0f0f0",
-            xaxis=dict(range=[0, 1199], showgrid=True, gridcolor="#A3C993", dtick=100, side="bottom"),
-            yaxis=dict(range=[0, 1199], showgrid=True, gridcolor="#A3C993", dtick=100, scaleanchor="x", scaleratio=1),
-            width=800,
-            height=800,
+            xaxis=dict(range=[0, 1199], showgrid=True, gridcolor="#A3C993", dtick=100, side="bottom", constrain="domain"),
+            yaxis=dict(range=[0, 1199], showgrid=True, gridcolor="#A3C993", dtick=100, scaleanchor="x", scaleratio=1, constrain="domain"),
+            width=750,  # Lock the exact width
+            height=750, # Lock the exact height to make it a perfect square
+            margin=dict(l=20, r=20, t=40, b=20), # Shave off the ugly excess borders
             title="Live Tactical Map (Drag to pan, Scroll to zoom)",
             showlegend=False
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        # Tell Streamlit NOT to stretch it, and force Plotly to enable scroll-zooming
+        st.plotly_chart(
+            fig, 
+            use_container_width=False, # <--- This stops the rectangle stretching
+            config={'scrollZoom': True} # <--- This fixes your mouse wheel!
+        )
