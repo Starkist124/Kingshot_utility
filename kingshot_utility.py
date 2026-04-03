@@ -114,9 +114,17 @@ with tab1:
                 match = att_res.json()["data"][0]
                 st.warning(f"⚔️ **Latest Attack** vs KD {match['kingdom_b']} | Season: {match.get('kvk_title', 'Unknown')}")
 
+
 # ==========================================
 # TAB 2: TACTICAL MAP
 # ==========================================
+
+# Initialize Map View State (For the Search Feature)
+if "map_x_range" not in st.session_state:
+    st.session_state.map_x_range = [0, 1200]
+if "map_y_range" not in st.session_state:
+    st.session_state.map_y_range = [0, 1200]
+
 with tab2:
     df = load_data()
     
@@ -125,20 +133,38 @@ with tab2:
     with sidebar_col:
         st.header("🎛️ Map Controls")
         
-        # 1. Add New Marker Form
-        with st.expander("➕ Add New Marker", expanded=True):
+        # 1. Search Feature (RESTORED)
+        st.subheader("🔍 Find Coordinate")
+        col_sx, col_sy = st.columns(2)
+        search_x = col_sx.number_input("Search X", min_value=0, max_value=1200, value=600, key="sx")
+        search_y = col_sy.number_input("Search Y", min_value=0, max_value=1200, value=600, key="sy")
+        
+        col_go, col_reset = st.columns(2)
+        if col_go.button("Go To Coord", use_container_width=True):
+            # Zooms into a 100x100 tile view around the target
+            st.session_state.map_x_range = [max(0, search_x - 50), min(1200, search_x + 50)]
+            st.session_state.map_y_range = [max(0, search_y - 50), min(1200, search_y + 50)]
+            st.rerun()
+            
+        if col_reset.button("Reset View", use_container_width=True):
+            # Pops the map back out to the full 1200x1200 grid
+            st.session_state.map_x_range = [0, 1200]
+            st.session_state.map_y_range = [0, 1200]
+            st.rerun()
+
+        # 2. Add New Marker Form
+        with st.expander("➕ Add New Marker", expanded=False):
             with st.form("add_marker_form", clear_on_submit=True):
                 new_name = st.text_input("Marker Name")
-                col_x, col_y = st.columns(2)
-                new_x = col_x.number_input("X Coord", min_value=0, max_value=1199, value=600)
-                new_y = col_y.number_input("Y Coord", min_value=0, max_value=1199, value=600)
+                col_ax, col_ay = st.columns(2)
+                new_x = col_ax.number_input("X Coord", min_value=0, max_value=1199, value=600, key="ax")
+                new_y = col_ay.number_input("Y Coord", min_value=0, max_value=1199, value=600, key="ay")
                 new_type = st.selectbox("Type", list(TYPE_STYLES.keys()))
                 new_affil = st.selectbox("Affiliation", list(AFFILIATION_COLORS.keys()))
                 new_rad = st.number_input("Danger Radius", min_value=0, value=0)
                 
                 if st.form_submit_button("Save to Database"):
                     if new_name:
-                        # Append to our dataframe and save to Google Sheets!
                         new_row = pd.DataFrame([{
                             "Name": new_name, "Type": new_type, "Affiliation": new_affil, 
                             "X": new_x, "Y": new_y, "Radius": new_rad
@@ -146,10 +172,10 @@ with tab2:
                         updated_df = pd.concat([df, new_row], ignore_index=True)
                         conn.update(worksheet="Sheet1", data=updated_df)
                         st.success("Saved!")
-                        st.rerun() # Refresh the app to show the new marker
+                        st.rerun() 
 
-        # 2. Filters
-        st.subheader("Filters")
+        # 3. Filters
+        st.subheader("👁️ Filters")
         show_allies = st.checkbox("Show Allies 🟢", value=True)
         show_enemies = st.checkbox("Show Enemies 🔴", value=True)
         show_neutral = st.checkbox("Show Neutral ⚪", value=True)
@@ -169,59 +195,50 @@ with tab2:
         fig = go.Figure()
 
         if not filtered_df.empty:
-            # Map colors from our dictionary to the dataframe
             colors = filtered_df["Affiliation"].map(AFFILIATION_COLORS)
-            # Create hover text
             hover_text = filtered_df.apply(lambda row: f"<b>{row['Name']}</b><br>Type: {row['Type']}<br>Coords: ({row['X']}, {row['Y']})", axis=1)
+
+            # Draw the Target Square if they searched for a coordinate!
+            if st.session_state.map_x_range != [0, 1200]:
+                fig.add_shape(type="rect",
+                    x0=search_x-1, y0=search_y-1, x1=search_x+1, y1=search_y+1,
+                    line=dict(color="yellow", width=3), fillcolor="rgba(255, 255, 0, 0.2)"
+                )
 
             fig.add_trace(go.Scatter(
                 x=filtered_df["X"],
                 y=filtered_df["Y"],
                 mode="markers+text",
                 marker=dict(size=12, color=colors, line=dict(width=2, color='white')),
-                text=filtered_df["Type"].map(TYPE_STYLES), # Draw the emojis!
+                text=filtered_df["Type"].map(TYPE_STYLES), 
                 textposition="top center",
                 textfont=dict(size=16),
                 hoverinfo="text",
                 hovertext=hover_text
             ))
 
-        # Format the Map Canvas to be a perfect square and fix the drag/zoom issues
+        # Format the Map Canvas
         fig.update_layout(
             plot_bgcolor="#C4E0B4",
-            paper_bgcolor="#1E1E1E", # Changed to a dark gray to match your theme!
-            dragmode="pan",          # <--- This fixes the "drag to pan" issue!
+            paper_bgcolor="#1E1E1E",
+            dragmode="pan",
             xaxis=dict(
-                range=[0, 1200], 
-                autorange=False,     # <--- Stops it from auto-squishing to your markers
-                showgrid=True, 
-                gridcolor="#A3C993", 
-                dtick=100, 
-                side="bottom",
-                fixedrange=False
+                range=st.session_state.map_x_range, # Driven by the Search button!
+                showgrid=True, gridcolor="#A3C993", dtick=100, side="bottom"
             ),
             yaxis=dict(
-                range=[0, 1200], 
-                autorange=False,     # <--- Stops it from auto-squishing
-                showgrid=True, 
-                gridcolor="#A3C993", 
-                dtick=100,
-                fixedrange=False
-                # Removed the buggy scaleanchor properties that crashed your map!
+                range=st.session_state.map_y_range, # Driven by the Search button!
+                showgrid=True, gridcolor="#A3C993", dtick=100,
+                scaleanchor="x", scaleratio=1 # This forces the grid to be perfectly square
             ),
-            width=750,  
-            height=750, 
-            margin=dict(l=20, r=20, t=40, b=20),
-            title=dict(text="Live Tactical Map (Drag to pan, Scroll to zoom)", font=dict(color="#E0E0E0")),
+            margin=dict(l=10, r=10, t=40, b=10),
+            title=dict(text="Live Tactical Map", font=dict(color="#E0E0E0")),
             showlegend=False
         )
 
-        # Tell Streamlit NOT to stretch it, enable scroll, and HIDE the ugly toolbar
+        # Let Streamlit naturally fill the column without hardcoded pixel limits
         st.plotly_chart(
             fig, 
-            use_container_width=False, 
-            config={
-                'scrollZoom': True, 
-                'displayModeBar': False  # <--- This hides the clunky floating menu!
-            } 
+            use_container_width=True, 
+            config={'scrollZoom': True, 'displayModeBar': False} 
         )
