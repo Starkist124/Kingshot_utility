@@ -236,9 +236,18 @@ with tab2:
             showlegend=False
         )
 
-        # Let Streamlit naturally fill the column without hardcoded pixel limits
+        # Turn off scroll zoom to stop the stutter, and bring back a cleaned-up menu bar!
         st.plotly_chart(
             fig, 
             use_container_width=True, 
-            config={'scrollZoom': True, 'displayModeBar': False} 
+            config={
+                'scrollZoom': False, 
+                'displayModeBar': True, 
+                'displaylogo': False, # Hides the Plotly logo
+                'modeBarButtonsToRemove': [
+                    'lasso2d', 'select2d', 'autoScale2d', 
+                    'hoverClosestCartesian', 'hoverCompareCartesian', 
+                    'toggleSpikelines'
+                ] # Hides all the useless data-science tools!
+            } 
         )
