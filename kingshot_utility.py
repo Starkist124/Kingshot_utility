@@ -59,10 +59,26 @@ with tab1:
     
     with col1:
         st.subheader("Player Lookup")
-        player_id = st.text_input("Enter Player ID (e.g., 262432539)")
+        
+        # Initialize an empty history list in the session state
+        if "search_history" not in st.session_state:
+            st.session_state.search_history = []
+            
+        # Create a dropdown that displays recent searches
+        selected_history = st.selectbox("Recent Searches", st.session_state.search_history) if st.session_state.search_history else ""
+        
+        # Text input defaults to whatever they pick from the dropdown
+        player_id = st.text_input("Enter Player ID (e.g., 262432539)", value=selected_history)
+        
         if st.button("Get Player Stats"):
-            if player_id:
-                res = requests.get("https://kingshot.net/api/player-info", params={"playerId": player_id})
+            raw_id = player_id.split(" - ")[0].strip()
+            if raw_id:
+                # Add to history if it's a new ID, and limit history to 10 items
+                if player_id not in st.session_state.search_history:
+                    st.session_state.search_history.insert(0, player_id)
+                    st.session_state.search_history = st.session_state.search_history[:10]
+                
+                res = requests.get("https://kingshot.net/api/player-info", params={"playerId": raw_id})
                 if res.status_code == 200:
                     data = res.json()["data"]
                     st.success(f"**Name:** {data['name']} | **Kingdom:** {data['kingdom']} | **Level:** {data['level']}")
