@@ -200,9 +200,12 @@ with tab2:
             showlegend=False
         )
 
-        # Tell Streamlit NOT to stretch it, and force Plotly to enable scroll-zooming
+        # Tell Streamlit NOT to stretch it, enable scroll, and HIDE the ugly toolbar
         st.plotly_chart(
             fig, 
-            use_container_width=False, # <--- This stops the rectangle stretching
-            config={'scrollZoom': True} # <--- This fixes your mouse wheel!
+            use_container_width=False, 
+            config={
+                'scrollZoom': True, 
+                'displayModeBar': False  # <--- This hides the clunky floating menu!
+            } 
         )
